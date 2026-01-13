@@ -46,3 +46,16 @@ def test_list_literal_and_index(capsys):
     run_program(src)
     out = capsys.readouterr().out.strip()
     assert out == "20"
+
+def test_closure_captures_outer_var(capsys):
+    src = """
+    def make_adder(x) {
+      def add(y) { return x + y; }
+      return add;
+    }
+    add5 = make_adder(5);
+    print(add5(3));
+    """
+    run_program(src)
+    out = capsys.readouterr().out.strip()
+    assert out == "8"

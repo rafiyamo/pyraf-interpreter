@@ -1,0 +1,7 @@
+def make_adder(x) {
+  def add(y) { return x + y; }
+  return add;
+}
+
+add5 = make_adder(5);
+print(add5(3));

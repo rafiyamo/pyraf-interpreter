@@ -2,9 +2,7 @@ import argparse
 from pathlib import Path
 
 from pyraf.lexer import lex
-from pyraf.parser import Parser
 from pyraf.errors import PyRafError
-from pyraf.interpreter import Interpreter
 
 
 def main() -> None:
@@ -22,6 +20,9 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.cmd == "run":
+        from pyraf.parser import Parser as RafParser
+        from pyraf.interpreter import Interpreter
+
         path = Path(args.file)
         if not path.exists():
             raise SystemExit(f"File not found: {path}")
@@ -30,24 +31,23 @@ def main() -> None:
 
         try:
             tokens = lex(src)
-            program = Parser(tokens, src).parse_program()
+            program = RafParser(tokens, src).parse_program()
+            interp = Interpreter(src)
+            interp.run(program)
         except PyRafError as e:
             print(e)
             raise SystemExit(1)
 
-        
-        interp = Interpreter(src)
-        interp.run(program)
         return
 
     if args.cmd == "repl":
-        print("PyRaf REPL. End statements with ';'. Use { } for blocks. Type 'quit' to exit.")
-        # persistent session env
+        from pyraf.parser import Parser as RafParser
         from pyraf.interpreter import Interpreter
         from pyraf.runtime import Env
-        from pyraf.parser import Parser
 
-        interp = Interpreter(src="")  # src will be set per run
+        print("PyRaf REPL. End statements with ';'. Use { } for blocks. Type 'quit' to exit.")
+
+        interp = Interpreter(src="")
         env = Env(interp.globals)
 
         buffer = ""
@@ -64,8 +64,6 @@ def main() -> None:
 
             buffer += line + "\n"
 
-            # Only try to run when it looks like the user finished a statement/block.
-            # Heuristic: last non-whitespace ends with ';' or '}'.
             stripped = buffer.strip()
             if not stripped:
                 buffer = ""
@@ -75,7 +73,7 @@ def main() -> None:
 
             try:
                 tokens = lex(buffer)
-                program = Parser(tokens, buffer).parse_program()
+                program = RafParser(tokens, buffer).parse_program()
                 interp.src = buffer
                 interp.run_in_env(program, env)
             except PyRafError as e:
@@ -83,7 +81,6 @@ def main() -> None:
             finally:
                 buffer = ""
         return
-
 
 
 if __name__ == "__main__":

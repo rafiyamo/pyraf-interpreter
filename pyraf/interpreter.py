@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List, Tuple
 
 from . import ast as A
 from .errors import RuntimeError_, format_error
@@ -12,6 +12,9 @@ class Interpreter:
         self.src = src
         self.globals = Env()
         self._install_builtins()
+
+        # Call stack frames: (function_name, line, col)
+        self._frames: List[Tuple[str, int, int]] = []
 
     def _install_builtins(self) -> None:
         def b_print(args: List[Any]) -> Any:
@@ -25,6 +28,14 @@ class Interpreter:
 
         self.globals.define("print", ("builtin", b_print))
         self.globals.define("len", ("builtin", b_len))
+
+    def _format_stacktrace(self) -> str:
+        if not self._frames:
+            return ""
+        lines = ["Stack trace (most recent call last):"]
+        for name, line, col in reversed(self._frames):
+            lines.append(f"  at {name} (line {line}, col {col})")
+        return "\n".join(lines)
 
     def run(self, program: List[A.Stmt]) -> None:
         for s in program:
@@ -54,7 +65,7 @@ class Interpreter:
             if isinstance(stmt, A.Assign):
                 name = stmt.name.lexeme
                 val = self.eval_expr(stmt.value, env)
-                # FIX: update existing binding in any enclosing scope; otherwise define locally
+                # update existing binding in any enclosing scope; otherwise define locally
                 try:
                     env.set(name, val)
                 except RuntimeError_:
@@ -96,17 +107,27 @@ class Interpreter:
             raise RuntimeError_("Unknown statement type")
 
         except RuntimeError_ as e:
+            # try to locate a token for caret formatting
             tok = getattr(stmt, "if_tok", None) or getattr(stmt, "while_tok", None) or getattr(stmt, "return_tok", None)
 
-            # For Assign / Def, try to use the identifier token location if present
             if tok is None and hasattr(stmt, "name"):
                 maybe_tok = getattr(stmt, "name")
                 if hasattr(maybe_tok, "line") and hasattr(maybe_tok, "col"):
                     tok = maybe_tok
 
             if tok is not None:
-                raise RuntimeError_(format_error(self.src, tok.line, tok.col, str(e))) from None
-            raise
+                base = format_error(self.src, tok.line, tok.col, str(e))
+                st = self._format_stacktrace()
+                if st:
+                    base += "\n" + st
+                raise RuntimeError_(base) from None
+
+            # no token: still add stack trace if we have one
+            msg = str(e)
+            st = self._format_stacktrace()
+            if st:
+                msg += "\n" + st
+            raise RuntimeError_(msg) from None
 
     # -------------------------
     # Expressions
@@ -144,8 +165,9 @@ class Interpreter:
                 raise RuntimeError_(f"Unknown unary operator {expr.op.lexeme}")
 
             if isinstance(expr, A.Binary):
-                # short-circuit
                 k = expr.op.kind.name
+
+                # short-circuit
                 if k == "AND":
                     left = self.eval_expr(expr.left, env)
                     return self.eval_expr(expr.right, env) if self.truthy(left) else left
@@ -175,11 +197,18 @@ class Interpreter:
                 callee = self.eval_expr(expr.callee, env)
                 args = [self.eval_expr(a, env) for a in expr.args]
 
+                # builtins
                 if isinstance(callee, tuple) and callee[0] == "builtin":
                     return callee[1](args)
 
+                # user function
                 if isinstance(callee, Function):
-                    return callee.call(self, args)
+                    callsite = expr.lparen
+                    self._frames.append((callee.name, callsite.line, callsite.col))
+                    try:
+                        return callee.call(self, args)
+                    finally:
+                        self._frames.pop()
 
                 raise RuntimeError_("Can only call functions")
 
@@ -188,5 +217,14 @@ class Interpreter:
         except RuntimeError_ as e:
             tok = getattr(expr, "tok", None) or getattr(expr, "lparen", None) or getattr(expr, "lbracket", None)
             if tok is not None:
-                raise RuntimeError_(format_error(self.src, tok.line, tok.col, str(e))) from None
-            raise
+                base = format_error(self.src, tok.line, tok.col, str(e))
+                st = self._format_stacktrace()
+                if st:
+                    base += "\n" + st
+                raise RuntimeError_(base) from None
+
+            msg = str(e)
+            st = self._format_stacktrace()
+            if st:
+                msg += "\n" + st
+            raise RuntimeError_(msg) from None
