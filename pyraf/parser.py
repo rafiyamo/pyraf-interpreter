@@ -60,6 +60,12 @@ class Parser:
             return self.def_stmt(self.prev())
         if self.match(TokenKind.RETURN):
             return self.return_stmt(self.prev())
+        
+        if self.match(TokenKind.IMPORT):
+            imp_tok = self.prev()
+            path_tok = self.expect(TokenKind.STRING, "Expected string path after import")
+            self.expect(TokenKind.SEMI, "Expected ';' after import")
+            return A.Import(path_tok=path_tok, path=path_tok.lexeme)
 
         # assignment: IDENT '=' expr ';'
         if self.check(TokenKind.IDENT) and self.toks[self.i + 1].kind == TokenKind.EQ:

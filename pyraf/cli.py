@@ -45,7 +45,7 @@ def main() -> None:
             else:
                 from pyraf.interpreter import Interpreter
 
-                interp = Interpreter(src)
+                interp = Interpreter(src, base_dir=str(path.parent))
                 interp.run(program)
 
         except PyRafError as e:
@@ -83,7 +83,7 @@ def main() -> None:
 
         print("PyRaf REPL. End statements with ';'. Use { } for blocks. Type 'quit' to exit.")
 
-        interp = Interpreter(src="")
+        interp = Interpreter(src="", base_dir=str(Path.cwd()))
         env = Env(interp.globals)
 
         buffer = ""

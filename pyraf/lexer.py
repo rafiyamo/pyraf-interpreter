@@ -15,6 +15,7 @@ KEYWORDS = {
     "and": TokenKind.AND,
     "or": TokenKind.OR,
     "not": TokenKind.NOT,
+    "import": TokenKind.IMPORT,
 }
 
 SINGLE = {

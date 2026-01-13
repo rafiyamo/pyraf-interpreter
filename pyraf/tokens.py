@@ -41,6 +41,8 @@ class TokenKind(Enum):
 
     EOF = auto()
 
+    IMPORT = auto()
+
 @dataclass(frozen=True)
 class Token:
     kind: TokenKind

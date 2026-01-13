@@ -3,18 +3,21 @@ from __future__ import annotations
 from typing import Any, List, Tuple
 
 from . import ast as A
+from pathlib import Path
 from .errors import RuntimeError_, format_error
 from .runtime import Env, Function, ReturnSignal
 
-
 class Interpreter:
-    def __init__(self, src: str):
+    def __init__(self, src: str, base_dir: str | None = None):
         self.src = src
+        self.base_dir = base_dir 
         self.globals = Env()
         self._install_builtins()
 
         # Call stack frames: (function_name, line, col)
         self._frames: List[Tuple[str, int, int]] = []
+        self._imported: set[str] = set()
+
 
     def _install_builtins(self) -> None:
         def b_print(args: List[Any]) -> Any:
@@ -48,6 +51,14 @@ class Interpreter:
 
     def truthy(self, v: Any) -> bool:
         return bool(v)
+    
+    def _resolve_import_path(self, path: str) -> str:
+        import os
+        if os.path.isabs(path):
+            return path
+        base = self.base_dir or os.getcwd()
+        return os.path.normpath(os.path.join(base, path))
+
 
     # -------------------------
     # Statements
@@ -71,6 +82,38 @@ class Interpreter:
                 except RuntimeError_:
                     env.define(name, val)
                 return
+            
+            if isinstance(stmt, A.Import):
+                import os
+                from pyraf.lexer import lex
+                from pyraf.parser import Parser
+
+                full_path = self._resolve_import_path(stmt.path)
+
+                if full_path in self._imported:
+                    return  # cached
+
+                if not os.path.exists(full_path):
+                    raise RuntimeError_(f"Import not found: {stmt.path}")
+
+                mod_src = Path(full_path).read_text(encoding="utf-8")
+                self._imported.add(full_path)
+
+                # Run module in the *same* env so its defs become available
+                prev_src = self.src
+                prev_base = self.base_dir
+                try:
+                    self.src = mod_src
+                    self.base_dir = os.path.dirname(full_path)
+                    tokens = lex(mod_src)
+                    program = Parser(tokens, mod_src).parse_program()
+                    for s2 in program:
+                        self.exec_stmt(s2, env)
+                finally:
+                    self.src = prev_src
+                    self.base_dir = prev_base
+                return
+
 
             if isinstance(stmt, A.Block):
                 # new lexical scope

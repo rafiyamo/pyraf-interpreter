@@ -78,6 +78,11 @@ class Assign(Stmt):
     value: Expr
 
 @dataclass(frozen=True)
+class Import(Stmt):
+    path_tok: Token   # STRING token
+    path: str         # string literal contents
+
+@dataclass(frozen=True)
 class Block(Stmt):
     lbrace: Token
     statements: List[Stmt]
