@@ -158,9 +158,9 @@ python -m pytest
 
 ---
 
-## Future work (optional)
+## Future work 
 
-* Module system: `import "file.raf";`
+* Module system
 * More builtins / standard library
 * Better type errors and richer diagnostics
 * Optimizations in the compiler/VM (constant folding, faster locals, etc.)
