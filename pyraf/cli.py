@@ -14,6 +14,10 @@ def main() -> None:
 
     run_p = sub.add_parser("run", help="Run a .raf file")
     run_p.add_argument("file", type=str)
+    run_p.add_argument("--vm", action="store_true", help="Run using the bytecode VM")
+
+    dis_p = sub.add_parser("dis", help="Disassemble a .raf file to bytecode")
+    dis_p.add_argument("file", type=str)
 
     sub.add_parser("repl", help="Start the PyRaf REPL")
 
@@ -21,7 +25,6 @@ def main() -> None:
 
     if args.cmd == "run":
         from pyraf.parser import Parser as RafParser
-        from pyraf.interpreter import Interpreter
 
         path = Path(args.file)
         if not path.exists():
@@ -32,8 +35,41 @@ def main() -> None:
         try:
             tokens = lex(src)
             program = RafParser(tokens, src).parse_program()
-            interp = Interpreter(src)
-            interp.run(program)
+
+            if args.vm:
+                from pyraf.compiler import compile_program
+                from pyraf.vm import VM
+
+                chunk = compile_program(program, src, name=str(path))
+                VM(src).run(chunk)
+            else:
+                from pyraf.interpreter import Interpreter
+
+                interp = Interpreter(src)
+                interp.run(program)
+
+        except PyRafError as e:
+            print(e)
+            raise SystemExit(1)
+
+        return
+
+    if args.cmd == "dis":
+        from pyraf.parser import Parser as RafParser
+        from pyraf.compiler import compile_program
+        from pyraf.bytecode import disassemble
+
+        path = Path(args.file)
+        if not path.exists():
+            raise SystemExit(f"File not found: {path}")
+
+        src = path.read_text(encoding="utf-8")
+
+        try:
+            tokens = lex(src)
+            program = RafParser(tokens, src).parse_program()
+            chunk = compile_program(program, src, name=str(path))
+            print(disassemble(chunk))
         except PyRafError as e:
             print(e)
             raise SystemExit(1)
