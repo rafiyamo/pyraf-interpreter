@@ -1,0 +1,9 @@
+// demo.raf
+x = 12;
+y = x * 2 + 1;
+
+if (y >= 10) {
+  print("ok");
+} else {
+  print("no");
+}

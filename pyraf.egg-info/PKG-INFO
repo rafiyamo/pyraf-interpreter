@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: pyraf
+Version: 0.1.0
+Summary: PyRaf — a Python-inspired interpreter with lexer, parser, AST, and REPL.
+Author: Your Name
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: license-file
+
+# PyRaf
+A Python-inspired interpreter with a custom lexer, parser, AST, and REPL.
