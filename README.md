@@ -17,7 +17,10 @@ PyRaf is a Python-inspired interpreted language implemented in Python. It includ
 - **Bytecode compiler** (AST → bytecode)
 - **Stack-based VM runtime** (bytecode execution)
 - **Disassembler** (`pyraf dis`) to inspect emitted bytecode
-- **Tests + CI**: unit tests for lexer/parser/evaluator and VM tests 
+- **Tests + CI**: unit tests for lexer/parser/evaluator and VM tests
+- **Imports/modules**: import "path/file.raf"; with caching
+- **Bytecode tooling**: dis command and stack-based VM execution (run --vm)
+- **Diagnostics**: runtime errors include source context and call stack traces
 
 ---
 
@@ -93,6 +96,13 @@ add5 = make_adder(5);
 print(add5(3)); // 8
 ```
 
+### Imports (modules)
+
+```raf
+import "lib/math.raf";
+print(square(9));
+```
+
 ### Expressions
 
 * Arithmetic: `+  -  *  /  %`
@@ -155,12 +165,3 @@ python -m pytest
 * The bytecode VM executes compiled code using a simple stack machine.
 * Closures work by capturing the current lexical environment as a function’s closure.
 * Runtime errors are formatted with source context and include a lightweight stack trace.
-
----
-
-## Future work 
-
-* Module system
-* More builtins / standard library
-* Better type errors and richer diagnostics
-* Optimizations in the compiler/VM (constant folding, faster locals, etc.)
