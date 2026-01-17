@@ -1,0 +1,51 @@
+// mandelbrot_ascii.raf
+y = -12;
+while (y <= 12) {
+  x = -39;
+  line = "";
+
+  while (x <= 39) {
+    cr = x / 20;
+    ci = y / 10;
+
+    zr = 0;
+    zi = 0;
+
+    it = 0;
+    maxit = 30;
+    bailed = 0;
+
+    while (it < maxit) {
+      zr2 = (zr * zr) - (zi * zi) + cr;
+      zi2 = (2 * zr * zi) + ci;
+
+      zr = zr2;
+      zi = zi2;
+
+      if ((zr * zr + zi * zi) > 4) {
+        bailed = 1;
+        it = maxit;
+      } else {
+        it = it + 1;
+      }
+    }
+
+    // Character bands
+    if (bailed == 0) { line = line + "@"; }
+    else {
+      if (it >= 26) { line = line + "#"; }
+      else {
+        if (it >= 18) { line = line + "*"; }
+        else {
+          if (it >= 10) { line = line + "."; }
+          else { line = line + " "; }
+        }
+      }
+    }
+
+    x = x + 1;
+  }
+
+  print(line);
+  y = y + 1;
+}
