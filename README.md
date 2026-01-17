@@ -117,6 +117,8 @@ print(square(9));
 
 * `examples/demo.raf` — assignments, arithmetic, and `if/else`
 * `examples/closure.raf` — closures (nested function capturing outer variable)
+* `examples/fizzbuzz.raf` — loops and conditionals
+* `examples/mandelbrot_ascii.raf` — ASCII fractal demo
 
 Run:
 
